@@ -160,10 +160,202 @@
     color: #6c757d; /* A subtle grey */
 }
 
+
+/* Homepage-only visual polish: space ambience and the same slate chessboard palette as play.html. */
+body.home-page {
+    --home-space-ink: #070b17;
+    --home-space-panel: rgba(13, 19, 34, 0.76);
+    --home-board-light: #e2e8f0;
+    --home-board-dark: #475569;
+    color: #e8eef8;
+    background:
+        radial-gradient(ellipse at 12% 8%, rgba(56, 189, 248, 0.15), transparent 34%),
+        radial-gradient(ellipse at 88% 24%, rgba(99, 102, 241, 0.14), transparent 32%),
+        radial-gradient(ellipse at 50% 80%, rgba(30, 64, 175, 0.11), transparent 38%),
+        #070b17;
+    position: relative;
+    isolation: isolate;
+}
+body.home-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 7% 19%, rgba(255,255,255,.7) 98%, transparent),
+        radial-gradient(1px 1px at 22% 73%, rgba(186,230,253,.65) 98%, transparent),
+        radial-gradient(1.5px 1.5px at 44% 13%, rgba(255,255,255,.65) 98%, transparent),
+        radial-gradient(1px 1px at 63% 48%, rgba(255,255,255,.55) 98%, transparent),
+        radial-gradient(1px 1px at 83% 16%, rgba(186,230,253,.7) 98%, transparent),
+        radial-gradient(1px 1px at 92% 79%, rgba(255,255,255,.55) 98%, transparent);
+    background-size: 370px 290px;
+    opacity: .55;
+}
+body.home-page .navbar {
+    background: rgba(7, 11, 23, .78);
+    border-bottom: 1px solid rgba(148, 163, 184, .16);
+    backdrop-filter: blur(18px);
+}
+body.home-page .navbar-brand,
+body.home-page .airsland-name { color: #eaf6ff; }
+body.home-page .brand-logo { border-color: rgba(125, 211, 252, .55); }
+body.home-page .navbar-toggler { border-color: rgba(226,232,240,.45); }
+body.home-page .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3e%3cpath stroke='%23e2e8f0' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+body.home-page .navbar-nav .nav-link,
+body.home-page .nav-link { color: #dbeafe !important; }
+body.home-page .navbar-nav .nav-link:hover,
+body.home-page .nav-link:hover,
+body.home-page .nav-link.active { color: #7dd3fc !important; }
+
+body.home-page .hero-section {
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, .15), transparent 55%),
+        linear-gradient(135deg, rgba(10, 16, 32, .72), rgba(10, 16, 32, .4));
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+    backdrop-filter: blur(2px);
+}
+body.home-page .hero-section::before {
+    background: radial-gradient(circle at 50% 40%, rgba(125, 211, 252, .11) 0%, transparent 65%);
+    opacity: .8;
+}
+body.home-page .hero-section::after {
+    content: "♞";
+    position: absolute;
+    right: clamp(-35px, 5vw, 90px);
+    bottom: -0.34em;
+    z-index: 0;
+    pointer-events: none;
+    font-family: Georgia, serif;
+    font-size: clamp(17rem, 36vw, 34rem);
+    line-height: 1;
+    color: rgba(148, 197, 255, .09);
+    text-shadow: 0 0 70px rgba(56, 189, 248, .16);
+    filter: blur(1.4px);
+}
+body.home-page .hero-content h1 { color: #f8fafc; text-shadow: 0 4px 30px rgba(56,189,248,.13); }
+body.home-page .hero-content p { color: #cbd5e1; }
+body.home-page #practice,
+body.home-page #tutorials.bg-light {
+    color: #e8eef8;
+    background: transparent !important;
+}
+body.home-page #practice h2,
+body.home-page #tutorials h2 { color: #f1f5f9; }
+body.home-page #practice .card,
+body.home-page .tutorial-card {
+    color: #e2e8f0;
+    background: rgba(13, 19, 34, .72);
+    border: 1px solid rgba(148, 163, 184, .2);
+    box-shadow: 0 18px 48px rgba(0,0,0,.2);
+    backdrop-filter: blur(16px);
+}
+body.home-page #practice .card-title,
+body.home-page .tutorial-card .card-title { color: #7dd3fc; }
+body.home-page #practice .form-label,
+body.home-page #practice .form-check-label,
+body.home-page #practice h6 { color: #e2e8f0; }
+body.home-page #practice .form-select {
+    color: #f1f5f9;
+    background-color: #172033;
+    border-color: rgba(148,163,184,.32);
+}
+body.home-page #practice .form-select option { background: #172033; color: #f1f5f9; }
+body.home-page #gameStatus {
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, .78);
+    border: 1px solid rgba(148,163,184,.2);
+    border-radius: 10px;
+}
+body.home-page #moveHistory {
+    color: #dbeafe;
+    background: rgba(8, 13, 25, .72);
+    border-color: rgba(148,163,184,.24);
+}
+
+/* Keep the practice board's actual chessboard.js behavior; align its dimensions and colors to play.html. */
+body.home-page #practice .board-container {
+    width: min(100%, 620px);
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+body.home-page #practice #board {
+    width: 100%;
+    max-width: 620px;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    margin: 0 auto;
+    overflow: hidden;
+    border: 0 !important;
+    border-radius: 10px;
+    background: var(--home-board-dark);
+    box-shadow: 0 22px 55px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.1);
+    backdrop-filter: none;
+    touch-action: manipulation;
+}
+body.home-page #practice #board .white-1e1d7 { background-color: var(--home-board-light) !important; }
+body.home-page #practice #board .black-3c85d { background-color: var(--home-board-dark) !important; }
+body.home-page #practice #board .highlight-selected {
+    background-color: rgba(250,204,21,.68) !important;
+    box-shadow: inset 0 0 0 3px rgba(202,138,4,.9);
+}
+body.home-page #practice #board .highlight-move { background-color: rgba(56,189,248,.4) !important; }
+body.home-page #practice #board .piece-417db {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.3));
+}
+body.home-page #practice #board .notation-322f9,
+body.home-page #practice #board .notation-32381 {
+    color: #64748b;
+    font-size: clamp(8px, 1.8vw, 12px);
+}
+body.home-page .tutorial-card img { width: 100%; }
+body.home-page footer.bg-dark {
+    background: rgba(5, 8, 17, .82) !important;
+    color: #94a3b8 !important;
+    border-top: 1px solid rgba(148,163,184,.15);
+    backdrop-filter: blur(14px);
+}
+@media (max-width: 767.98px) {
+    body.home-page .hero-section { padding: 76px 16px; }
+    body.home-page .hero-content h1 { font-size: clamp(2rem, 8vw, 2.7rem); }
+    body.home-page .hero-content .d-flex { flex-wrap: wrap; }
+    body.home-page .hero-content .btn { width: 100%; margin-bottom: 0; }
+    body.home-page .hero-section::after {
+        right: -45px;
+        bottom: -45px;
+        font-size: 19rem;
+        opacity: .7;
+    }
+    body.home-page #practice .row > .col-md-8,
+    body.home-page #practice .row > .col-md-4 {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+    body.home-page #practice .board-container { width: min(100%, calc(100vw - 28px)); }
+    body.home-page #practice .card { margin-top: 1.25rem; }
+    body.home-page #practice .card:hover,
+    body.home-page .tutorial-card:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    body.home-page::before,
+    body.home-page .hero-section,
+    body.home-page .hero-section::before { animation: none !important; }
+}
+
 </style>
 
 </head>
-<body>
+<body class="home-page">
 
   <div id="loading-screen">
     <div class="loader-card">
