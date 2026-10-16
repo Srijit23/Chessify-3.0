@@ -169,10 +169,13 @@ body.home-page {
     --home-board-dark: #475569;
     color: #e8eef8;
     background:
-        radial-gradient(ellipse at 12% 8%, rgba(56, 189, 248, 0.15), transparent 34%),
-        radial-gradient(ellipse at 88% 24%, rgba(99, 102, 241, 0.14), transparent 32%),
-        radial-gradient(ellipse at 50% 80%, rgba(30, 64, 175, 0.11), transparent 38%),
-        #070b17;
+        linear-gradient(135deg, rgba(255,255,255,.025) 0%, transparent 28%, rgba(148,163,184,.035) 52%, transparent 76%),
+        repeating-linear-gradient(0deg, rgba(203,213,225,.025) 0, rgba(203,213,225,.025) 1px, transparent 1px, transparent 72px),
+        repeating-linear-gradient(90deg, rgba(203,213,225,.025) 0, rgba(203,213,225,.025) 1px, transparent 1px, transparent 72px),
+        radial-gradient(ellipse at 50% -15%, rgba(148,163,184,.18), transparent 54%),
+        radial-gradient(ellipse at 10% 45%, rgba(71,85,105,.16), transparent 38%),
+        radial-gradient(ellipse at 92% 78%, rgba(51,65,85,.20), transparent 42%),
+        #080b12;
     position: relative;
     isolation: isolate;
 }
@@ -182,15 +185,10 @@ body.home-page::before {
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background-image:
-        radial-gradient(1px 1px at 7% 19%, rgba(255,255,255,.7) 98%, transparent),
-        radial-gradient(1px 1px at 22% 73%, rgba(186,230,253,.65) 98%, transparent),
-        radial-gradient(1.5px 1.5px at 44% 13%, rgba(255,255,255,.65) 98%, transparent),
-        radial-gradient(1px 1px at 63% 48%, rgba(255,255,255,.55) 98%, transparent),
-        radial-gradient(1px 1px at 83% 16%, rgba(186,230,253,.7) 98%, transparent),
-        radial-gradient(1px 1px at 92% 79%, rgba(255,255,255,.55) 98%, transparent);
-    background-size: 370px 290px;
-    opacity: .55;
+    background:
+        linear-gradient(115deg, transparent 0%, rgba(226,232,240,.035) 48%, transparent 62%),
+        radial-gradient(ellipse at 50% 0%, rgba(203,213,225,.055), transparent 60%);
+    opacity: .8;
 }
 body.home-page .navbar {
     background: rgba(7, 11, 23, .78);
@@ -221,20 +219,7 @@ body.home-page .hero-section::before {
     background: radial-gradient(circle at 50% 40%, rgba(125, 211, 252, .11) 0%, transparent 65%);
     opacity: .8;
 }
-body.home-page .hero-section::after {
-    content: "♞";
-    position: absolute;
-    right: clamp(-35px, 5vw, 90px);
-    bottom: -0.34em;
-    z-index: 0;
-    pointer-events: none;
-    font-family: Georgia, serif;
-    font-size: clamp(17rem, 36vw, 34rem);
-    line-height: 1;
-    color: rgba(148, 197, 255, .09);
-    text-shadow: 0 0 70px rgba(56, 189, 248, .16);
-    filter: blur(1.4px);
-}
+/* No decorative chess-piece silhouettes: keep the hero clean and cinematic. */
 body.home-page .hero-content h1 { color: #f8fafc; text-shadow: 0 4px 30px rgba(56,189,248,.13); }
 body.home-page .hero-content p { color: #cbd5e1; }
 body.home-page #practice,
@@ -329,12 +314,6 @@ body.home-page footer.bg-dark {
     body.home-page .hero-content h1 { font-size: clamp(2rem, 8vw, 2.7rem); }
     body.home-page .hero-content .d-flex { flex-wrap: wrap; }
     body.home-page .hero-content .btn { width: 100%; margin-bottom: 0; }
-    body.home-page .hero-section::after {
-        right: -45px;
-        bottom: -45px;
-        font-size: 19rem;
-        opacity: .7;
-    }
     body.home-page #practice .row > .col-md-8,
     body.home-page #practice .row > .col-md-4 {
         width: 100%;
@@ -354,20 +333,6 @@ body.home-page footer.bg-dark {
 
 
 
-/* One centered, high-quality vector knight watermark stays behind every homepage section. */
-body.home-page::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20720%20900%22%3E%0A%3Cdefs%3E%0A%20%3ClinearGradient%20id%3D%22metal%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%0A%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23d9f3ff%22%2F%3E%3Cstop%20offset%3D%22.42%22%20stop-color%3D%22%2383bde8%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%234f72bd%22%2F%3E%0A%20%3C%2FlinearGradient%3E%0A%20%3ClinearGradient%20id%3D%22shade%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%0A%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23e7f6ff%22%20stop-opacity%3D%22.75%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237dd3fc%22%20stop-opacity%3D%22.08%22%2F%3E%0A%20%3C%2FlinearGradient%3E%0A%20%3Cfilter%20id%3D%22glow%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%0A%20%20%3CfeGaussianBlur%20stdDeviation%3D%2210%22%2F%3E%0A%20%3C%2Ffilter%3E%0A%3C%2Fdefs%3E%0A%3Cpath%20d%3D%22M207%20789%20L253%20706%20L300%20651%20L281%20573%20L230%20514%20L188%20441%20L191%20359%20L232%20285%20L272%20244%20L260%20171%20L294%20112%20L364%2083%20L402%20124%20L456%20143%20L503%20190%20L529%20252%20L512%20314%20L473%20350%20L441%20363%20L423%20409%20L445%20473%20L488%20531%20L518%20605%20L565%20671%20L609%20706%20L620%20749%20L570%20771%20L482%20771%20L432%20745%20L386%20715%20L339%20751%20L303%20795%20Z%22%0A%20fill%3D%22%237dd3fc%22%20opacity%3D%22.22%22%20filter%3D%22url(%23glow)%22%2F%3E%0A%3Cpath%20d%3D%22M174%20789%20L215%20716%20L270%20664%20L263%20590%20L217%20536%20L175%20458%20L174%20367%20L211%20297%20L258%20250%20L245%20176%20L282%20114%20L353%2082%20L391%20119%20L449%20141%20L494%20190%20L521%20252%20L506%20308%20L473%20343%20L437%20360%20L415%20404%20L433%20463%20L476%20523%20L507%20598%20L555%20664%20L602%20699%20L618%20744%20L579%20765%20L491%20765%20L435%20740%20L386%20708%20L339%20748%20L292%20793%20Z%22%0A%20fill%3D%22url(%23metal)%22%20stroke%3D%22%23b9e6ff%22%20stroke-opacity%3D%22.62%22%20stroke-width%3D%225%22%20stroke-linejoin%3D%22round%22%2F%3E%0A%3Cpath%20d%3D%22M282%20114%20L353%2082%20L391%20119%20L366%20161%20L325%20174%20L300%20221%20L258%20250%20L245%20176%20Z%22%20fill%3D%22url(%23shade)%22%20opacity%3D%22.6%22%2F%3E%0A%3Cpath%20d%3D%22M353%2082%20L375%2035%20L405%2099%20L391%20119%20Z%22%20fill%3D%22%239bc9f3%22%20opacity%3D%22.68%22%2F%3E%0A%3Cpath%20d%3D%22M267%20249%20L326%20257%20L369%20293%20L346%20321%20L292%20314%20L256%20339%20L231%20383%20L239%20437%20L273%20478%20L306%20502%20L329%20555%20L313%20592%20L270%20590%20L217%20536%20L175%20458%20L174%20367%20L211%20297%20Z%22%20fill%3D%22%23101b35%22%20fill-opacity%3D%22.28%22%2F%3E%0A%3Cpath%20d%3D%22M277%20261%20L324%20272%20L354%20297%20L335%20315%20L296%20309%20L263%20334%20L247%20376%20L251%20424%20L284%20461%20L316%20485%20L337%20527%20L333%20563%22%20fill%3D%22none%22%20stroke%3D%22%23d9f3ff%22%20stroke-opacity%3D%22.58%22%20stroke-width%3D%227%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%0A%3Cpath%20d%3D%22M284%20114%20L315%20151%20L350%20167%20L389%20161%20L424%20183%20L451%20215%20L463%20255%20L446%20291%20L413%20316%20L380%20326%20L355%20355%20L346%20389%22%20fill%3D%22none%22%20stroke%3D%22%23d9f3ff%22%20stroke-opacity%3D%22.4%22%20stroke-width%3D%226%22%20stroke-linecap%3D%22round%22%2F%3E%0A%3Cpath%20d%3D%22M414%20233%20L437%20246%20L424%20265%20L402%20257%20Z%22%20fill%3D%22%23dff7ff%22%20opacity%3D%22.9%22%2F%3E%0A%3Cpath%20d%3D%22M420%20239%20L430%20244%22%20stroke%3D%22%2314203b%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%2F%3E%0A%3Cpath%20d%3D%22M473%20343%20L437%20360%20L415%20404%20L433%20463%20L476%20523%20L507%20598%20L555%20664%20L602%20699%20L618%20744%20L579%20765%20L491%20765%20L435%20740%20L386%20708%20L339%20748%20L292%20793%20L174%20789%20L215%20716%20L270%20664%20L263%20590%22%20fill%3D%22none%22%20stroke%3D%22%23d9f3ff%22%20stroke-opacity%3D%22.3%22%20stroke-width%3D%227%22%20stroke-linejoin%3D%22round%22%2F%3E%0A%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-size: min(72vw, 650px) auto;
-    opacity: .19;
-    filter: drop-shadow(0 0 28px rgba(56, 189, 248, .12));
-}
 </style>
 
 </head>
