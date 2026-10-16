@@ -668,21 +668,6 @@
             }
         }
 
-        .time-control-picker { padding: 12px; border: 1px solid rgba(148,163,184,.25); border-radius: 12px; background: rgba(15,23,42,.42); }
-        .chess-clock-bar { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; width: 100%; margin: 0 0 12px; }
-        .chess-clock-sidebar .chess-clock-player { min-height: 54px; }
-        .chess-clock-sidebar .clock-player-name { flex: 1 1 auto; }
-        .chess-clock-sidebar .chess-clock { flex: 0 0 auto; }
-        @media (min-width: 768px) { .chess-clock-sidebar { position: sticky; top: 12px; } }
-        .chess-clock-player { display:flex; align-items:center; gap:9px; min-width:0; padding:10px 13px; border:1px solid #344154; border-radius:12px; background:linear-gradient(145deg,#1b2430,#0b1018); color:#e5edf7; box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
-        .clock-color-dot { flex:0 0 9px; width:9px; height:9px; border-radius:50%; }
-        .white-dot { background:#e8edf3; box-shadow:0 0 0 2px #536173; }
-        .black-dot { background:#202a38; border:1px solid #8795a7; }
-        .clock-player-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.9rem; }
-        .chess-clock { margin-left:auto; font:700 clamp(1rem,2.2vw,1.45rem)/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; font-variant-numeric:tabular-nums; letter-spacing:.03em; }
-        .chess-clock-player.active { border-color:#9aafc6; box-shadow:0 0 0 1px rgba(154,175,198,.2),inset 0 1px 0 rgba(255,255,255,.08); }
-        .chess-clock-player.low-time .chess-clock { color:#ff7d87; }
-        @media(max-width:480px) { .chess-clock-bar { gap:6px; } .chess-clock-player { padding:8px; gap:6px; } .clock-player-name { font-size:.78rem; } .chess-clock { font-size:1rem; } }
     </style>
 </head>
 <body>
@@ -732,21 +717,6 @@
                                     </div>
                                     <div id="lobbyIdentity" class="lobby-identity mt-2">Connect to the test server, then enter your name.</div>
                                 </div>
-                                <div class="mb-3 text-start time-control-picker">
-                                    <label for="challengeTimeControl" class="form-label">Challenge time control</label>
-                                    <select id="challengeTimeControl" class="form-select bg-secondary text-white border-0">
-                                        <option value="180+0">3 min · Blitz</option>
-                                        <option value="60+0">1 min · Bullet</option>
-                                        <option value="600+0">10 min · Rapid</option>
-                                        <option value="900+0">15 min · Rapid</option>
-                                        <option value="custom">Custom time + increment</option>
-                                    </select>
-                                    <div id="customTimeControl" class="row g-2 mt-1" hidden>
-                                        <div class="col-6"><label for="customMinutes" class="form-label small">Minutes per side</label><input id="customMinutes" type="number" class="form-control bg-secondary text-white border-0" min="1" max="180" value="5"></div>
-                                        <div class="col-6"><label for="customIncrement" class="form-label small">Increment (seconds)</label><input id="customIncrement" type="number" class="form-control bg-secondary text-white border-0" min="0" max="180" value="3"></div>
-                                    </div>
-                                    <small class="text-secondary">Applies to challenges you send. Custom games support an increment after each move.</small>
-                                </div>
                                 <div class="mb-3 text-start">
                                     <label for="roomId" class="form-label">Room ID</label>
                                     <input type="text" class="form-control bg-secondary text-white border-0" id="roomId" placeholder="Enter room ID">
@@ -777,10 +747,6 @@
                 </div>
 
                 <div class="col-md-4">
-                    <div class="chess-clock-bar chess-clock-sidebar mb-3" aria-label="Game clocks">
-                        <div class="chess-clock-player" id="whiteClockPlayer"><span class="clock-color-dot white-dot"></span><span class="clock-player-name" id="whiteClockName">White</span><strong class="chess-clock" id="whiteClock">03:00</strong></div>
-                        <div class="chess-clock-player" id="blackClockPlayer"><span class="clock-color-dot black-dot"></span><span class="clock-player-name" id="blackClockName">Black</span><strong class="chess-clock" id="blackClock">03:00</strong></div>
-                    </div>
                     <div class="lobby-panel mb-3" id="lobbyPanelGame">
                         <h6><i class="fa-solid fa-users me-2"></i>Online players</h6>
                         <div id="lobbyPlayersGame" class="lobby-player-list"><div class="lobby-empty">Waiting for lobby connection…</div></div>
