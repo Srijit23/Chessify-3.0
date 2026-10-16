@@ -37,70 +37,60 @@ function initStockfish() {
 }
 
 // NEW: Encapsulate click binding logic
+function commitPlayerMove(from, to) {
+    if (isComputerThinking || game.game_over() || game.turn() !== userColor) return false;
+
+    const move = game.move({ from, to, promotion: 'q' });
+    if (!move) return false;
+
+    board.position(game.fen());
+    playMoveSound(move);
+    addMoveToHistory(move);
+    deselectPiece();
+    updateStatus();
+
+    if (!game.game_over()) setTimeout(makeComputerThink, 250);
+    return true;
+}
+
 function bindSquareClickHandlers() {
-    // Detach any existing handlers first to prevent multiple bindings or ghost listeners
-    $('#board .square-55d63').off('click');
-
-    // Attach the click handler
-    $('#board .square-55d63').on('click', function () {
+    // Keep click-to-select, click-to-move available alongside drag-and-drop.
+    $('#board .square-55d63').off('click.homePractice').on('click.homePractice', function () {
         const clickedSquare = $(this).attr('data-square');
-        console.log("Clicked square:", clickedSquare);
-
-        if (isComputerThinking || game.game_over()) {
-            console.log("Interaction blocked: computer thinking or game over.");
-            return;
-        }
+        if (!clickedSquare || isComputerThinking || game.game_over() || game.turn() !== userColor) return;
 
         if (tapSquare === null) {
             const piece = game.get(clickedSquare);
-            if (piece && piece.color === userColor && game.turn() === userColor) {
+            if (piece && piece.color === userColor) {
                 tapSquare = clickedSquare;
                 highlightLegalMoves(tapSquare);
-                console.log("Piece selected:", tapSquare);
             } else {
-                console.log("Cannot select: no piece, not your piece, or not your turn.");
                 removeHighlights();
             }
-        } else {
-            if (clickedSquare === tapSquare) {
-                deselectPiece();
-                console.log("Piece deselected.");
-            } else {
-                const moveAttempt = {
-                    from: tapSquare,
-                    to: clickedSquare,
-                    promotion: 'q'
-                };
+            return;
+        }
 
-                const moveResult = game.move(moveAttempt);
+        if (clickedSquare === tapSquare) {
+            deselectPiece();
+            return;
+        }
 
-                if (moveResult === null) {
-                    const newPiece = game.get(clickedSquare);
-                    if (newPiece && newPiece.color === userColor && game.turn() === userColor) {
-                        deselectPiece();
-                        tapSquare = clickedSquare;
-                        highlightLegalMoves(tapSquare);
-                        console.log("Invalid move, selecting new piece:", clickedSquare);
-                    } else {
-                        deselectPiece();
-                        console.log("Invalid move, deselecting piece.");
-                    }
-                } else {
-                    board.position(game.fen());
-                    playMoveSound(moveResult);
-                    addMoveToHistory(moveResult);
-                    updateStatus();
-                    deselectPiece();
-                    console.log("Move made:", moveResult);
+        const clickedPiece = game.get(clickedSquare);
+        // Clicking another own piece selects it, rather than losing the current selection.
+        if (clickedPiece && clickedPiece.color === userColor) {
+            tapSquare = clickedSquare;
+            highlightLegalMoves(tapSquare);
+            return;
+        }
 
-                    if (!game.game_over()) setTimeout(makeComputerThink, 250);
-                }
-            }
+        const from = tapSquare;
+        if (!commitPlayerMove(from, clickedSquare)) {
+            // Keep the source selected after an illegal destination, so the user can try again.
+            tapSquare = from;
+            highlightLegalMoves(from);
         }
     });
-    console.log("Square click handlers bound.");
 }
-
 
 function initializeBoard() {
     console.log("Initializing board...");
@@ -113,18 +103,12 @@ function initializeBoard() {
         onDragStart: function (source, piece) {
             if (isComputerThinking || game.game_over() || game.turn() !== userColor) return false;
             if ((userColor === 'w' && piece.startsWith('b')) || (userColor === 'b' && piece.startsWith('w'))) return false;
+            deselectPiece();
             return true;
         },
         onDrop: function (source, target) {
-            removeHighlights();
-            if (isComputerThinking || game.game_over() || game.turn() !== userColor) return 'snapback';
-            const move = game.move({ from: source, to: target, promotion: 'q' });
-            if (move === null) return 'snapback';
-            deselectPiece();
-            playMoveSound(move);
-            addMoveToHistory(move);
-            updateStatus();
-            if (!game.game_over()) setTimeout(makeComputerThink, 250);
+            // Invalid drops snap back; valid drops are committed through the same path as click moves.
+            if (!commitPlayerMove(source, target)) return 'snapback';
         },
         onSnapEnd: function () {
             board.position(game.fen());
