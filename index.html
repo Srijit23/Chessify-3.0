@@ -397,17 +397,6 @@ body.home-page footer.bg-dark {
 </head>
 <body class="home-page">
 
-  <div id="loading-screen">
-    <div class="loader-card">
-      <img src="images/image.png" alt="Loading Banner" class="loader-banner">
-      <div class="loader-content">
-        <h1>Loading Airsland</h1>
-        <p>Preparing your board and strategy...</p>
-        <div class="loader-spinner"></div>
-      </div>
-    </div>
-  </div>
-
   <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="#">
@@ -549,14 +538,7 @@ body.home-page footer.bg-dark {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="script.js"></script>
   <script>
-    window.addEventListener('load', () => {
-      const loader = document.getElementById('loading-screen');
-      setTimeout(() => {
-        loader.classList.add('hide-loader');
-      }, 2000);
-    });
-
-    const navbarCollapse = document.querySelector('.navbar-collapse');
+const navbarCollapse = document.querySelector('.navbar-collapse');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
 
     function closeSidebar() {
