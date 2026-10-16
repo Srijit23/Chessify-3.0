@@ -552,7 +552,7 @@ $(document).ready(() => {
             showError('Leave your current room before challenging another player.');
             return;
         }
-        $(this).prop('disabled', true).text('Sending…');
+        showStatus('Sending challenge…', 'info');
         ws.send(JSON.stringify({
             type: 'challenge_player',
             targetPlayerId: targetPlayerId
