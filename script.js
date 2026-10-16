@@ -106,10 +106,29 @@ function initializeBoard() {
     console.log("Initializing board...");
 
     const config = {
-        draggable: false, // DRAG AND DROP DISABLED
+        draggable: true,
         position: 'start',
         pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
-        showNotation: true
+        showNotation: true,
+        onDragStart: function (source, piece) {
+            if (isComputerThinking || game.game_over() || game.turn() !== userColor) return false;
+            if ((userColor === 'w' && piece.startsWith('b')) || (userColor === 'b' && piece.startsWith('w'))) return false;
+            return true;
+        },
+        onDrop: function (source, target) {
+            removeHighlights();
+            if (isComputerThinking || game.game_over() || game.turn() !== userColor) return 'snapback';
+            const move = game.move({ from: source, to: target, promotion: 'q' });
+            if (move === null) return 'snapback';
+            deselectPiece();
+            playMoveSound(move);
+            addMoveToHistory(move);
+            updateStatus();
+            if (!game.game_over()) setTimeout(makeComputerThink, 250);
+        },
+        onSnapEnd: function () {
+            board.position(game.fen());
+        }
     };
 
     board = Chessboard('board', config);
