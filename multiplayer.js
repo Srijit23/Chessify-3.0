@@ -536,6 +536,29 @@ $(document).ready(() => {
         $('#enterLobby').prop('disabled', true).text('Joining…');
     });
 
+    // Delegate because lobby player rows are rebuilt whenever the server broadcasts the player list.
+    // Clicking Challenge sends a request to the selected player; their client then shows the Accept/Decline popup.
+    $(document).on('click', '.lobby-challenge', function () {
+        if (!isConnected || !isRegistered || !ws || ws.readyState !== WebSocket.OPEN) {
+            showError('Connect to the lobby before challenging a player.');
+            return;
+        }
+        const targetPlayerId = String($(this).attr('data-player-id') || '');
+        if (!targetPlayerId) {
+            showError('Could not identify that player. Refresh the lobby and try again.');
+            return;
+        }
+        if (currentRoom) {
+            showError('Leave your current room before challenging another player.');
+            return;
+        }
+        $(this).prop('disabled', true).text('Sending…');
+        ws.send(JSON.stringify({
+            type: 'challenge_player',
+            targetPlayerId: targetPlayerId
+        }));
+    });
+
     $('#acceptChallenge').click(() => {
         if (!incomingChallengeId || !isConnected) return;
         ws.send(JSON.stringify({ type: 'accept_challenge', challengeId: incomingChallengeId }));
