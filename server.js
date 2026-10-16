@@ -13,6 +13,67 @@ const gameRooms = new Map();
 const onlinePlayers = new Map();
 const challenges = new Map();
 const CHALLENGE_TIMEOUT_MS = 30000;
+const DEFAULT_TIME_SECONDS = 180;
+function createClock(initialSeconds, incrementSeconds) {
+    const initialMs = Math.max(60000, Math.min(10800000, Number(initialSeconds) * 1000 || DEFAULT_TIME_SECONDS * 1000));
+    const incrementMs = Math.max(0, Math.min(180000, Number(incrementSeconds) * 1000 || 0));
+    return { whiteMs: initialMs, blackMs: initialMs, incrementMs, activeColor: 'white', running: false, lastStartedAt: 0, timer: null };
+}
+function clockSnapshot(room) {
+    const c = room.clock;
+    let whiteMs = c.whiteMs, blackMs = c.blackMs;
+    if (c.running && c.lastStartedAt) {
+        const elapsed = Date.now() - c.lastStartedAt;
+        if (c.activeColor === 'white') whiteMs -= elapsed;
+        else blackMs -= elapsed;
+    }
+    return { whiteMs: Math.max(0, whiteMs), blackMs: Math.max(0, blackMs), incrementMs: c.incrementMs, activeColor: c.activeColor, running: c.running };
+}
+function broadcastClock(room) {
+    const clock = clockSnapshot(room);
+    const payload = { type: 'clock_update', clock: clock };
+    [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
+}
+function stopClock(room) {
+    if (room.clock && room.clock.timer) clearInterval(room.clock.timer);
+    if (room.clock) { room.clock.running = false; room.clock.timer = null; }
+}
+function startClock(room) {
+    if (!room.clock) room.clock = createClock(DEFAULT_TIME_SECONDS, 0);
+    if (room.clock.timer) clearInterval(room.clock.timer);
+    room.clock.running = true;
+    room.clock.lastStartedAt = Date.now();
+    room.clock.timer = setInterval(() => {
+        const snap = clockSnapshot(room);
+        if (snap.whiteMs <= 0 || snap.blackMs <= 0) {
+            room.clock.whiteMs = snap.whiteMs;
+            room.clock.blackMs = snap.blackMs;
+            stopClock(room);
+            const loser = snap.whiteMs <= 0 ? 'white' : 'black';
+            const winner = loser === 'white' ? 'black' : 'white';
+            const payload = { type: 'game_over', result: 'Time expired. ' + (winner === 'white' ? 'White' : 'Black') + ' wins!', winner, reason: 'timeout', clock: clockSnapshot(room) };
+            [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
+            return;
+        }
+        broadcastClock(room);
+    }, 250);
+}
+function switchClockAfterMove(room, mover) {
+    if (!room.clock) room.clock = createClock(DEFAULT_TIME_SECONDS, 0);
+    const c = room.clock;
+    const now = Date.now();
+    if (c.running && c.lastStartedAt) {
+        const elapsed = now - c.lastStartedAt;
+        if (mover === 'white') c.whiteMs -= elapsed;
+        else c.blackMs -= elapsed;
+    }
+    if (mover === 'white') c.whiteMs += c.incrementMs;
+    else c.blackMs += c.incrementMs;
+    c.activeColor = mover === 'white' ? 'black' : 'white';
+    c.lastStartedAt = now;
+    c.running = true;
+    broadcastClock(room);
+}
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 function send(ws, payload) {
@@ -89,9 +150,11 @@ function startChallengeMatch(challenge) {
         white: challenge.fromWs,
         black: challenge.toWs,
         spectators: [],
-        gameState: { fen: START_FEN, moves: [] }
+        gameState: { fen: START_FEN, moves: [] },
+        clock: createClock(challenge.initialSeconds, challenge.incrementSeconds)
     };
     gameRooms.set(roomId, room);
+    startClock(room);
 
     challenge.fromWs.roomId = roomId;
     challenge.fromWs.color = 'white';
@@ -100,8 +163,8 @@ function startChallengeMatch(challenge) {
     challenge.toWs.color = 'black';
     challenge.toWs.isSpectator = false;
 
-    send(challenge.fromWs, { type: 'game_start', roomId: roomId, color: 'white', fen: START_FEN, opponent: challenge.toWs.playerName });
-    send(challenge.toWs, { type: 'game_start', roomId: roomId, color: 'black', fen: START_FEN, opponent: challenge.fromWs.playerName });
+    send(challenge.fromWs, { type: 'game_start', roomId: roomId, color: 'white', fen: START_FEN, opponent: challenge.toWs.playerName, clock: clockSnapshot(room) });
+    send(challenge.toWs, { type: 'game_start', roomId: roomId, color: 'black', fen: START_FEN, opponent: challenge.fromWs.playerName, clock: clockSnapshot(room) });
     broadcastPlayerList();
 }
 
@@ -196,7 +259,8 @@ function handleCreateRoom(ws, data) {
         white: ws,
         black: null,
         spectators: [],
-        gameState: { fen: START_FEN, moves: [] }
+        gameState: { fen: START_FEN, moves: [] },
+        clock: createClock(DEFAULT_TIME_SECONDS, 0)
     });
     ws.roomId = roomId;
     ws.color = 'white';
@@ -218,8 +282,9 @@ function handleJoinRoom(ws, data) {
         ws.roomId = roomId;
         ws.color = 'black';
         ws.isSpectator = false;
-        send(room.white, { type: 'game_start', roomId: roomId, color: 'white', fen: room.gameState.fen, opponent: room.black.playerName });
-        send(ws, { type: 'game_start', roomId: roomId, color: 'black', fen: room.gameState.fen, opponent: room.white.playerName });
+        startClock(room);
+        send(room.white, { type: 'game_start', roomId: roomId, color: 'white', fen: room.gameState.fen, opponent: room.black.playerName, clock: clockSnapshot(room) });
+        send(ws, { type: 'game_start', roomId: roomId, color: 'black', fen: room.gameState.fen, opponent: room.white.playerName, clock: clockSnapshot(room) });
     } else {
         room.spectators.push(ws);
         ws.roomId = roomId;
@@ -228,6 +293,9 @@ function handleJoinRoom(ws, data) {
     }
     broadcastPlayerList();
 }
+
+function clampChallengeTime(value) { const n = Number(value); return Number.isFinite(n) ? Math.max(60, Math.min(10800, Math.round(n))) : DEFAULT_TIME_SECONDS; }
+function clampChallengeIncrement(value) { const n = Number(value); return Number.isFinite(n) ? Math.max(0, Math.min(180, Math.round(n))) : 0; }
 
 function handleChallengePlayer(ws, data) {
     if (!isRegistered(ws)) return sendError(ws, 'Enter the lobby with your name first.');
@@ -248,7 +316,9 @@ function handleChallengePlayer(ws, data) {
         toId: targetId,
         fromWs: ws,
         toWs: target.ws,
-        timer: null
+        timer: null,
+        initialSeconds: clampChallengeTime(data.initialSeconds),
+        incrementSeconds: clampChallengeIncrement(data.incrementSeconds)
     };
     challenge.timer = setTimeout(function () {
         removeChallenge(challengeId, 'challenge_expired', 'Challenge expired.');
@@ -261,7 +331,9 @@ function handleChallengePlayer(ws, data) {
         challengeId: challengeId,
         fromPlayerId: ws.playerId,
         fromName: ws.playerName,
-        expiresIn: CHALLENGE_TIMEOUT_MS
+        expiresIn: CHALLENGE_TIMEOUT_MS,
+        initialSeconds: challenge.initialSeconds,
+        incrementSeconds: challenge.incrementSeconds
     });
 }
 
@@ -296,9 +368,12 @@ function handleMove(ws, data) {
     const room = getRoomForPlayer(ws);
     if (!room || ws.isSpectator || (ws !== room.white && ws !== room.black)) return sendError(ws, 'You cannot move in this room.');
     if (typeof data.fen !== 'string' || !data.move || typeof data.move !== 'object') return sendError(ws, 'Invalid move payload.');
+    const mover = ws === room.white ? 'white' : 'black';
+    if (room.clock && room.clock.running && room.clock.activeColor !== mover) return sendError(ws, 'It is not your turn on the clock.');
     room.gameState.fen = data.fen;
     room.gameState.moves.push(data.move);
-    const payload = { type: 'move_made', move: data.move, fen: data.fen };
+    switchClockAfterMove(room, mover);
+    const payload = { type: 'move_made', move: data.move, fen: data.fen, clock: clockSnapshot(room) };
     send(room.white, payload);
     send(room.black, payload);
     room.spectators.forEach(function (spectator) { send(spectator, payload); });
@@ -307,7 +382,8 @@ function handleMove(ws, data) {
 function handleGameOver(ws, data) {
     const room = getRoomForPlayer(ws);
     if (!room || ws.isSpectator) return sendError(ws, 'You are not an active player in this room.');
-    const payload = { type: 'game_over', result: String(data.result || 'Game over') };
+    stopClock(room);
+    const payload = { type: 'game_over', result: String(data.result || 'Game over'), clock: clockSnapshot(room) };
     send(room.white, payload);
     send(room.black, payload);
     room.spectators.forEach(function (spectator) { send(spectator, payload); });

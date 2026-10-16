@@ -10,6 +10,9 @@ let playerId = '';
 let playerName = '';
 let incomingChallengeId = '';
 let tapSquare = null; // Stores the square of the currently selected piece for tap-to-move
+let gameClock = { whiteMs: 180000, blackMs: 180000, incrementMs: 0, activeColor: null, running: false, lastSyncAt: 0 };
+let clockInterval = null;
+let localClockAnchor = 0;
 
 // Connect only to the configured test backend (never silently fall back to the live Render server).
 function connectToServer() {
@@ -85,7 +88,7 @@ function handleServerMessage(data) {
                 break;
             case 'incoming_challenge':
                 incomingChallengeId = data.challengeId;
-                $('#incomingChallengeName').text(data.fromName || 'A player');
+                $('#incomingChallengeName').text((data.fromName || 'A player') + ' · ' + formatTimeControl(data.initialSeconds, data.incrementSeconds));
                 $('#incomingChallenge').prop('hidden', false);
                 break;
             case 'challenge_sent':
@@ -107,6 +110,9 @@ function handleServerMessage(data) {
                 break;
             case 'move_made':
                 handleMoveMade(data);
+                break;
+            case 'clock_update':
+                applyClockUpdate(data);
                 break;
             case 'game_over':
                 handleGameOver(data);
@@ -285,6 +291,52 @@ function initializeBoard(orientation) {
     setTimeout(bindSquareClickHandlers, 100);
 }
 
+
+function formatTimeControl(initialSeconds, incrementSeconds) {
+    const mins = Math.max(1, Math.round(Number(initialSeconds || 180) / 60));
+    const inc = Math.max(0, Number(incrementSeconds || 0));
+    return mins + ' min' + (inc ? ' + ' + inc + 's' : '');
+}
+function formatClock(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = Math.floor(total / 60);
+    const seconds = total % 60;
+    return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+}
+function stopLocalClock() {
+    gameClock.running = false;
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = null;
+}
+function applyClockUpdate(data) {
+    const source = data.clock || data;
+    if (Number.isFinite(Number(source.whiteMs))) gameClock.whiteMs = Number(source.whiteMs);
+    if (Number.isFinite(Number(source.blackMs))) gameClock.blackMs = Number(source.blackMs);
+    if (Number.isFinite(Number(source.incrementMs))) gameClock.incrementMs = Number(source.incrementMs);
+    gameClock.activeColor = source.activeColor || null;
+    gameClock.running = Boolean(source.running);
+    gameClock.lastSyncAt = Date.now();
+    localClockAnchor = Date.now();
+    renderClocks();
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = null;
+    if (gameClock.running && gameClock.activeColor) {
+        clockInterval = setInterval(renderClocks, 100);
+    }
+}
+function renderClocks() {
+    let white = gameClock.whiteMs, black = gameClock.blackMs;
+    if (gameClock.running && gameClock.activeColor) {
+        const elapsed = Math.max(0, Date.now() - localClockAnchor);
+        if (gameClock.activeColor === 'white') white -= elapsed;
+        else black -= elapsed;
+    }
+    $('#whiteClock').text(formatClock(white));
+    $('#blackClock').text(formatClock(black));
+    $('#whiteClockPlayer').toggleClass('active', gameClock.running && gameClock.activeColor === 'white').toggleClass('low-time', white <= 10000);
+    $('#blackClockPlayer').toggleClass('active', gameClock.running && gameClock.activeColor === 'black').toggleClass('low-time', black <= 10000);
+}
+
 // Handle room creation
 function handleRoomCreated(data) {
     console.log("Room created message received:", data);
@@ -312,6 +364,9 @@ function handleGameStart(data) {
     console.log('Game starting message received:', data);
     currentRoom = data.roomId;
     playerColor = data.color; // 'white' or 'black' - Crucial for joining player
+    $('#whiteClockName').text(data.color === 'white' ? (playerName || 'You') : (data.opponent || 'White'));
+    $('#blackClockName').text(data.color === 'black' ? (playerName || 'You') : (data.opponent || 'Black'));
+    if (data.clock) applyClockUpdate(data.clock);
     game = new Chess(); // Reset the game state
 
     $('#currentRoom').text(currentRoom);
@@ -335,6 +390,7 @@ function handleGameStart(data) {
 
 // Handle moves made by either player
 function handleMoveMade(data) {
+    if (data.clock) applyClockUpdate(data.clock);
     console.log('Applying opponent move:', data.move);
     game.move(data.move);
     if (board) { // Ensure board exists before updating position
@@ -349,6 +405,8 @@ function handleMoveMade(data) {
 
 // Handle game over
 function handleGameOver(data) {
+    stopLocalClock();
+    if (data.clock) applyClockUpdate(data.clock);
     showStatus(data.result, 'info');
     disableGameControls();
     deselectPiece(); // Deselect on game end
@@ -534,10 +592,29 @@ $(document).ready(() => {
         $('#incomingChallenge').prop('hidden', true);
         incomingChallengeId = '';
     });
+    $('#challengeTimeControl').on('change', function () {
+        $('#customTimeControl').prop('hidden', this.value !== 'custom');
+    });
+
     $('#lobbyPlayersStart, #lobbyPlayersGame').on('click', '.lobby-challenge', function () {
         const targetPlayerId = $(this).attr('data-player-id');
         if (!targetPlayerId || !isRegistered || !isConnected || currentRoom) return;
-        ws.send(JSON.stringify({ type: 'challenge_player', targetPlayerId: targetPlayerId }));
+        const selected = $('#challengeTimeControl').val() || '180+0';
+        let initialSeconds = 180, incrementSeconds = 0;
+        if (selected === 'custom') {
+            initialSeconds = Number($('#customMinutes').val()) * 60;
+            incrementSeconds = Number($('#customIncrement').val());
+            if (!Number.isFinite(initialSeconds) || initialSeconds < 60 || initialSeconds > 10800 ||
+                !Number.isFinite(incrementSeconds) || incrementSeconds < 0 || incrementSeconds > 180) {
+                showError('Custom time must be 1–180 minutes and increment 0–180 seconds.');
+                return;
+            }
+        } else {
+            const parts = selected.split('+');
+            initialSeconds = Number(parts[0]);
+            incrementSeconds = Number(parts[1] || 0);
+        }
+        ws.send(JSON.stringify({ type: 'challenge_player', targetPlayerId, initialSeconds, incrementSeconds }));
     });
 
     // Create room button click handler
