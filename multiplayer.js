@@ -111,9 +111,6 @@ function handleServerMessage(data) {
             case 'move_made':
                 handleMoveMade(data);
                 break;
-            case 'clock_update':
-                applyClockUpdate(data);
-                break;
             case 'game_over':
                 handleGameOver(data);
                 break;
@@ -297,57 +294,6 @@ function formatTimeControl(initialSeconds, incrementSeconds) {
     const inc = Math.max(0, Number(incrementSeconds || 0));
     return mins + ' min' + (inc ? ' + ' + inc + 's' : '');
 }
-function formatClock(ms) {
-    const total = Math.max(0, Math.ceil(ms / 1000));
-    const minutes = Math.floor(total / 60);
-    const seconds = total % 60;
-    return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-}
-function stopLocalClock() {
-    gameClock.running = false;
-    if (clockInterval) clearInterval(clockInterval);
-    clockInterval = null;
-}
-function applyClockUpdate(data) {
-    const source = data && data.clock ? data.clock : data;
-    if (!source || typeof source !== 'object') return;
-
-    const whiteMs = Number(source.whiteMs);
-    const blackMs = Number(source.blackMs);
-    const incrementMs = Number(source.incrementMs);
-    if (Number.isFinite(whiteMs)) gameClock.whiteMs = Math.max(0, whiteMs);
-    if (Number.isFinite(blackMs)) gameClock.blackMs = Math.max(0, blackMs);
-    if (Number.isFinite(incrementMs)) gameClock.incrementMs = Math.max(0, incrementMs);
-
-    gameClock.activeColor = source.activeColor === 'white' || source.activeColor === 'black'
-        ? source.activeColor : null;
-    gameClock.running = source.running === true;
-    gameClock.lastSyncAt = Date.now();
-    localClockAnchor = gameClock.lastSyncAt;
-
-    // Keep exactly one renderer alive for the whole active clock. Frequent
-    // server syncs update the anchor, but never leave the display without a tick.
-    renderClocks();
-    if (gameClock.running && gameClock.activeColor) {
-        if (!clockInterval) clockInterval = setInterval(renderClocks, 100);
-    } else {
-        stopLocalClock();
-        renderClocks();
-    }
-}
-function renderClocks() {
-    let white = gameClock.whiteMs, black = gameClock.blackMs;
-    if (gameClock.running && gameClock.activeColor) {
-        const elapsed = Math.max(0, Date.now() - localClockAnchor);
-        if (gameClock.activeColor === 'white') white -= elapsed;
-        else black -= elapsed;
-    }
-    $('#whiteClock').text(formatClock(white));
-    $('#blackClock').text(formatClock(black));
-    $('#whiteClockPlayer').toggleClass('active', gameClock.running && gameClock.activeColor === 'white').toggleClass('low-time', white <= 10000);
-    $('#blackClockPlayer').toggleClass('active', gameClock.running && gameClock.activeColor === 'black').toggleClass('low-time', black <= 10000);
-}
-
 // Handle room creation
 function handleRoomCreated(data) {
     console.log("Room created message received:", data);
@@ -377,7 +323,6 @@ function handleGameStart(data) {
     playerColor = data.color; // 'white' or 'black' - Crucial for joining player
     $('#whiteClockName').text(data.color === 'white' ? (playerName || 'You') : (data.opponent || 'White'));
     $('#blackClockName').text(data.color === 'black' ? (playerName || 'You') : (data.opponent || 'Black'));
-    if (data.clock) applyClockUpdate(data.clock);
     game = new Chess(); // Reset the game state
 
     $('#currentRoom').text(currentRoom);
@@ -603,31 +548,6 @@ $(document).ready(() => {
         $('#incomingChallenge').prop('hidden', true);
         incomingChallengeId = '';
     });
-    $('#challengeTimeControl').on('change', function () {
-        $('#customTimeControl').prop('hidden', this.value !== 'custom');
-    });
-
-    $('#lobbyPlayersStart, #lobbyPlayersGame').on('click', '.lobby-challenge', function () {
-        const targetPlayerId = $(this).attr('data-player-id');
-        if (!targetPlayerId || !isRegistered || !isConnected || currentRoom) return;
-        const selected = $('#challengeTimeControl').val() || '180+0';
-        let initialSeconds = 180, incrementSeconds = 0;
-        if (selected === 'custom') {
-            initialSeconds = Number($('#customMinutes').val()) * 60;
-            incrementSeconds = Number($('#customIncrement').val());
-            if (!Number.isFinite(initialSeconds) || initialSeconds < 60 || initialSeconds > 10800 ||
-                !Number.isFinite(incrementSeconds) || incrementSeconds < 0 || incrementSeconds > 180) {
-                showError('Custom time must be 1–180 minutes and increment 0–180 seconds.');
-                return;
-            }
-        } else {
-            const parts = selected.split('+');
-            initialSeconds = Number(parts[0]);
-            incrementSeconds = Number(parts[1] || 0);
-        }
-        ws.send(JSON.stringify({ type: 'challenge_player', targetPlayerId, initialSeconds, incrementSeconds }));
-    });
-
     // Create room button click handler
     $('#createRoom').click(() => {
         if (!isConnected) {
