@@ -15,81 +15,106 @@ const challenges = new Map();
 const CHALLENGE_TIMEOUT_MS = 30000;
 const DEFAULT_TIME_SECONDS = 180;
 function createClock(initialSeconds, incrementSeconds) {
-    const initialMs = Math.max(60000, Math.min(10800000, Number(initialSeconds) * 1000 || DEFAULT_TIME_SECONDS * 1000));
-    const incrementMs = Math.max(0, Math.min(180000, Number(incrementSeconds) * 1000 || 0));
-    return { whiteMs: initialMs, blackMs: initialMs, incrementMs, activeColor: 'white', running: false, lastStartedAt: 0, timer: null };
+    const requestedSeconds = Number(initialSeconds);
+    const requestedIncrement = Number(incrementSeconds);
+    const initialMs = Math.max(60000, Math.min(10800000,
+        (Number.isFinite(requestedSeconds) && requestedSeconds > 0 ? requestedSeconds : DEFAULT_TIME_SECONDS) * 1000));
+    const incrementMs = Math.max(0, Math.min(180000,
+        (Number.isFinite(requestedIncrement) && requestedIncrement > 0 ? requestedIncrement : 0) * 1000));
+    return {
+        whiteMs: initialMs,
+        blackMs: initialMs,
+        incrementMs,
+        activeColor: 'white',
+        running: false,
+        lastStartedAt: 0,
+        timer: null
+    };
 }
-function clockSnapshot(room) {
-    const c = room.clock;
-    let whiteMs = c.whiteMs, blackMs = c.blackMs;
+
+// Settle elapsed time against the authoritative server clock. All move and
+// timeout paths use this same function so a late move cannot revive an expired game.
+function settleClock(room, now = Date.now()) {
+    const c = room && room.clock;
+    if (!c) return null;
     if (c.running && c.lastStartedAt) {
-        const elapsed = Date.now() - c.lastStartedAt;
-        if (c.activeColor === 'white') whiteMs -= elapsed;
-        else blackMs -= elapsed;
-    }
-    return { whiteMs: Math.max(0, whiteMs), blackMs: Math.max(0, blackMs), incrementMs: c.incrementMs, activeColor: c.activeColor, running: c.running };
-}
-function broadcastClock(room) {
-    const clock = clockSnapshot(room);
-    const payload = { type: 'clock_update', clock: clock };
-    [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
-}
-function stopClock(room) {
-    if (room.clock && room.clock.timer) clearInterval(room.clock.timer);
-    if (room.clock) { room.clock.running = false; room.clock.timer = null; }
-}
-function startClock(room) {
-    if (!room.clock) room.clock = createClock(DEFAULT_TIME_SECONDS, 0);
-    if (room.clock.timer) clearInterval(room.clock.timer);
-    room.clock.running = true;
-    room.clock.lastStartedAt = Date.now();
-
-    // Decrement the stored clock in short authoritative steps. Previously the
-    // server only calculated elapsed time for snapshots, leaving the stored
-    // base unchanged and making move-to-move accounting fragile.
-    room.clock.timer = setInterval(() => {
-        const c = room.clock;
-        if (!c || !c.running || !c.lastStartedAt) return;
-
-        const now = Date.now();
         const elapsed = Math.max(0, now - c.lastStartedAt);
         if (c.activeColor === 'white') c.whiteMs = Math.max(0, c.whiteMs - elapsed);
         else if (c.activeColor === 'black') c.blackMs = Math.max(0, c.blackMs - elapsed);
         c.lastStartedAt = now;
-
-        if (c.whiteMs <= 0 || c.blackMs <= 0) {
-            stopClock(room);
-            const loser = c.whiteMs <= 0 ? 'white' : 'black';
-            const winner = loser === 'white' ? 'black' : 'white';
-            const payload = {
-                type: 'game_over',
-                result: 'Time expired. ' + (winner === 'white' ? 'White' : 'Black') + ' wins!',
-                winner,
-                reason: 'timeout',
-                clock: clockSnapshot(room)
-            };
-            [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
-            return;
-        }
-
+    }
+    return c;
+}
+function clockSnapshot(room) {
+    const c = room.clock;
+    if (!c) return null;
+    let whiteMs = c.whiteMs, blackMs = c.blackMs;
+    if (c.running && c.lastStartedAt) {
+        const elapsed = Math.max(0, Date.now() - c.lastStartedAt);
+        if (c.activeColor === 'white') whiteMs = Math.max(0, whiteMs - elapsed);
+        else blackMs = Math.max(0, blackMs - elapsed);
+    }
+    return {
+        whiteMs: Math.max(0, whiteMs),
+        blackMs: Math.max(0, blackMs),
+        incrementMs: c.incrementMs,
+        activeColor: c.activeColor,
+        running: c.running
+    };
+}
+function broadcastClock(room) {
+    const payload = { type: 'clock_update', clock: clockSnapshot(room) };
+    [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
+}
+function stopClock(room) {
+    if (room.clock && room.clock.timer) clearInterval(room.clock.timer);
+    if (room.clock) {
+        room.clock.running = false;
+        room.clock.timer = null;
+    }
+}
+function finishOnTimeout(room, loser) {
+    if (!room || room.gameOver) return;
+    room.gameOver = true;
+    stopClock(room);
+    const winner = loser === 'white' ? 'black' : 'white';
+    const payload = {
+        type: 'game_over',
+        result: 'Time expired. ' + (winner === 'white' ? 'White' : 'Black') + ' wins!',
+        winner,
+        reason: 'timeout',
+        clock: clockSnapshot(room)
+    };
+    [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
+}
+function startClock(room) {
+    if (!room || room.gameOver || !room.white || !room.black) return;
+    if (!room.clock) room.clock = createClock(DEFAULT_TIME_SECONDS, 0);
+    if (room.clock.timer) clearInterval(room.clock.timer);
+    room.clock.running = true;
+    room.clock.activeColor = 'white';
+    room.clock.lastStartedAt = Date.now();
+    room.clock.timer = setInterval(() => {
+        if (!room.clock || !room.clock.running || room.gameOver) return;
+        const c = settleClock(room);
+        if (c.whiteMs <= 0) return finishOnTimeout(room, 'white');
+        if (c.blackMs <= 0) return finishOnTimeout(room, 'black');
         broadcastClock(room);
     }, 200);
 }
 function switchClockAfterMove(room, mover) {
-    if (!room.clock) room.clock = createClock(DEFAULT_TIME_SECONDS, 0);
-    const c = room.clock;
-    const now = Date.now();
-    if (c.running && c.lastStartedAt) {
-        const elapsed = now - c.lastStartedAt;
-        if (mover === 'white') c.whiteMs -= elapsed;
-        else c.blackMs -= elapsed;
+    const c = settleClock(room);
+    if (!c || room.gameOver || !c.running || c.activeColor !== mover) return false;
+    if ((mover === 'white' ? c.whiteMs : c.blackMs) <= 0) {
+        finishOnTimeout(room, mover);
+        return false;
     }
-    if (mover === 'white') c.whiteMs += c.incrementMs;
-    else c.blackMs += c.incrementMs;
+    if (mover === 'white') c.whiteMs = Math.min(10800000, c.whiteMs + c.incrementMs);
+    else c.blackMs = Math.min(10800000, c.blackMs + c.incrementMs);
     c.activeColor = mover === 'white' ? 'black' : 'white';
-    c.lastStartedAt = now;
-    c.running = true;
+    c.lastStartedAt = Date.now();
     broadcastClock(room);
+    return true;
 }
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -384,12 +409,23 @@ function getRoomForPlayer(ws) {
 function handleMove(ws, data) {
     const room = getRoomForPlayer(ws);
     if (!room || ws.isSpectator || (ws !== room.white && ws !== room.black)) return sendError(ws, 'You cannot move in this room.');
+    if (room.gameOver) return sendError(ws, 'This game has already ended.');
     if (typeof data.fen !== 'string' || !data.move || typeof data.move !== 'object') return sendError(ws, 'Invalid move payload.');
+
     const mover = ws === room.white ? 'white' : 'black';
-    if (room.clock && room.clock.running && room.clock.activeColor !== mover) return sendError(ws, 'It is not your turn on the clock.');
+    const clock = settleClock(room);
+    if (!clock || !clock.running) return sendError(ws, 'The game clock is not running.');
+    if (clock.activeColor !== mover) return sendError(ws, 'It is not your turn.');
+    if ((mover === 'white' ? clock.whiteMs : clock.blackMs) <= 0) {
+        finishOnTimeout(room, mover);
+        return;
+    }
+
+    // Settle and switch before broadcasting a move. If the clock reaches zero
+    // at this boundary, timeout wins and the move is not accepted.
+    if (!switchClockAfterMove(room, mover)) return;
     room.gameState.fen = data.fen;
     room.gameState.moves.push(data.move);
-    switchClockAfterMove(room, mover);
     const payload = { type: 'move_made', move: data.move, fen: data.fen, clock: clockSnapshot(room) };
     send(room.white, payload);
     send(room.black, payload);
@@ -399,6 +435,8 @@ function handleMove(ws, data) {
 function handleGameOver(ws, data) {
     const room = getRoomForPlayer(ws);
     if (!room || ws.isSpectator) return sendError(ws, 'You are not an active player in this room.');
+    if (room.gameOver) return;
+    room.gameOver = true;
     stopClock(room);
     const payload = { type: 'game_over', result: String(data.result || 'Game over'), clock: clockSnapshot(room) };
     send(room.white, payload);
