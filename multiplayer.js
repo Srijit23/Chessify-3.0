@@ -88,7 +88,7 @@ function handleServerMessage(data) {
                 break;
             case 'incoming_challenge':
                 incomingChallengeId = data.challengeId;
-                $('#incomingChallengeName').text((data.fromName || 'A player') + ' · ' + formatTimeControl(data.initialSeconds, data.incrementSeconds));
+                $('#incomingChallengeName').text((data.fromName || 'A player') + ' wants to play a game with you.');
                 $('#incomingChallenge').prop('hidden', false);
                 break;
             case 'challenge_sent':
