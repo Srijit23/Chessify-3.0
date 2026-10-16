@@ -309,19 +309,30 @@ function stopLocalClock() {
     clockInterval = null;
 }
 function applyClockUpdate(data) {
-    const source = data.clock || data;
-    if (Number.isFinite(Number(source.whiteMs))) gameClock.whiteMs = Number(source.whiteMs);
-    if (Number.isFinite(Number(source.blackMs))) gameClock.blackMs = Number(source.blackMs);
-    if (Number.isFinite(Number(source.incrementMs))) gameClock.incrementMs = Number(source.incrementMs);
-    gameClock.activeColor = source.activeColor || null;
-    gameClock.running = Boolean(source.running);
+    const source = data && data.clock ? data.clock : data;
+    if (!source || typeof source !== 'object') return;
+
+    const whiteMs = Number(source.whiteMs);
+    const blackMs = Number(source.blackMs);
+    const incrementMs = Number(source.incrementMs);
+    if (Number.isFinite(whiteMs)) gameClock.whiteMs = Math.max(0, whiteMs);
+    if (Number.isFinite(blackMs)) gameClock.blackMs = Math.max(0, blackMs);
+    if (Number.isFinite(incrementMs)) gameClock.incrementMs = Math.max(0, incrementMs);
+
+    gameClock.activeColor = source.activeColor === 'white' || source.activeColor === 'black'
+        ? source.activeColor : null;
+    gameClock.running = source.running === true;
     gameClock.lastSyncAt = Date.now();
-    localClockAnchor = Date.now();
+    localClockAnchor = gameClock.lastSyncAt;
+
+    // Keep exactly one renderer alive for the whole active clock. Frequent
+    // server syncs update the anchor, but never leave the display without a tick.
     renderClocks();
-    if (clockInterval) clearInterval(clockInterval);
-    clockInterval = null;
     if (gameClock.running && gameClock.activeColor) {
-        clockInterval = setInterval(renderClocks, 100);
+        if (!clockInterval) clockInterval = setInterval(renderClocks, 100);
+    } else {
+        stopLocalClock();
+        renderClocks();
     }
 }
 function renderClocks() {
