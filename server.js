@@ -482,12 +482,15 @@ function handleDrawResponse(ws, data) {
     if (!opponent) return sendError(ws, 'Your opponent has not joined yet.');
     send(opponent, { type: 'draw_response', accepted: Boolean(data.accepted) });
     if (data.accepted) {
-        const payload = { type: 'game_over', result: 'Draw agreed' };
+        room.gameOver = true;
+        stopClock(room);
+        const payload = { type: 'game_over', result: 'Draw agreed', reason: 'draw', clock: clockSnapshot(room) };
         send(room.white, payload);
         send(room.black, payload);
         room.spectators.forEach(function (spectator) { send(spectator, payload); });
-        room.white.roomId = null;
-        room.black.roomId = null;
+        if (room.white) room.white.roomId = null;
+        if (room.black) room.black.roomId = null;
+        room.spectators.forEach(function (spectator) { spectator.roomId = null; spectator.isSpectator = false; });
         gameRooms.delete(ws.roomId);
         broadcastPlayerList();
     }
@@ -511,6 +514,8 @@ function handlePlayerDisconnect(ws) {
     if (roomId) {
         const room = gameRooms.get(roomId);
         if (room) {
+            // Stop the authoritative clock immediately when a player leaves.
+            stopClock(room);
             const payload = { type: 'player_disconnected', color: ws.color };
             if (ws === room.white) {
                 room.white = null;
@@ -521,7 +526,10 @@ function handlePlayerDisconnect(ws) {
             } else {
                 room.spectators = room.spectators.filter(function (spectator) { return spectator !== ws; });
             }
-            if (!room.white && !room.black && room.spectators.length === 0) gameRooms.delete(roomId);
+            if (!room.white && !room.black && room.spectators.length === 0) {
+                stopClock(room);
+                gameRooms.delete(roomId);
+            }
         }
     }
     broadcastPlayerList();
