@@ -431,10 +431,21 @@ function handleMove(ws, data) {
 
     // Settle and switch before broadcasting a move. If the clock reaches zero
     // at this boundary, timeout wins and the move is not accepted.
+    // Only accept a move if it advances the position and agrees with the
+    // side-to-move encoded in the submitted FEN. This guards against stale
+    // or malformed move submissions changing whose clock is active.
+    const submittedFen = data.fen.trim();
+    const fields = submittedFen.split(/\s+/);
+    const expectedTurn = mover === 'white' ? 'b' : 'w';
+    const currentFields = String(room.gameState.fen || START_FEN).split(/\s+/);
+    if (fields.length < 4 || !/^[wb]$/.test(fields[1]) || fields[1] !== expectedTurn ||
+        fields[0] === currentFields[0] || submittedFen.length > 200) {
+        return sendError(ws, 'Move position is invalid or out of date. Please resync the board.');
+    }
     if (!switchClockAfterMove(room, mover)) return;
-    room.gameState.fen = data.fen;
+    room.gameState.fen = submittedFen;
     room.gameState.moves.push(data.move);
-    const payload = { type: 'move_made', move: data.move, fen: data.fen, clock: clockSnapshot(room) };
+    const payload = { type: 'move_made', move: data.move, fen: submittedFen, clock: clockSnapshot(room) };
     send(room.white, payload);
     send(room.black, payload);
     room.spectators.forEach(function (spectator) { send(spectator, payload); });
