@@ -43,20 +43,37 @@ function startClock(room) {
     if (room.clock.timer) clearInterval(room.clock.timer);
     room.clock.running = true;
     room.clock.lastStartedAt = Date.now();
+
+    // Decrement the stored clock in short authoritative steps. Previously the
+    // server only calculated elapsed time for snapshots, leaving the stored
+    // base unchanged and making move-to-move accounting fragile.
     room.clock.timer = setInterval(() => {
-        const snap = clockSnapshot(room);
-        if (snap.whiteMs <= 0 || snap.blackMs <= 0) {
-            room.clock.whiteMs = snap.whiteMs;
-            room.clock.blackMs = snap.blackMs;
+        const c = room.clock;
+        if (!c || !c.running || !c.lastStartedAt) return;
+
+        const now = Date.now();
+        const elapsed = Math.max(0, now - c.lastStartedAt);
+        if (c.activeColor === 'white') c.whiteMs = Math.max(0, c.whiteMs - elapsed);
+        else if (c.activeColor === 'black') c.blackMs = Math.max(0, c.blackMs - elapsed);
+        c.lastStartedAt = now;
+
+        if (c.whiteMs <= 0 || c.blackMs <= 0) {
             stopClock(room);
-            const loser = snap.whiteMs <= 0 ? 'white' : 'black';
+            const loser = c.whiteMs <= 0 ? 'white' : 'black';
             const winner = loser === 'white' ? 'black' : 'white';
-            const payload = { type: 'game_over', result: 'Time expired. ' + (winner === 'white' ? 'White' : 'Black') + ' wins!', winner, reason: 'timeout', clock: clockSnapshot(room) };
+            const payload = {
+                type: 'game_over',
+                result: 'Time expired. ' + (winner === 'white' ? 'White' : 'Black') + ' wins!',
+                winner,
+                reason: 'timeout',
+                clock: clockSnapshot(room)
+            };
             [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
             return;
         }
+
         broadcastClock(room);
-    }, 250);
+    }, 200);
 }
 function switchClockAfterMove(room, mover) {
     if (!room.clock) room.clock = createClock(DEFAULT_TIME_SECONDS, 0);
