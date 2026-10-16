@@ -54,42 +54,48 @@ function commitPlayerMove(from, to) {
 }
 
 function bindSquareClickHandlers() {
-    // Keep click-to-select, click-to-move available alongside drag-and-drop.
-    $('#board .square-55d63').off('click.homePractice').on('click.homePractice', function () {
-        const clickedSquare = $(this).attr('data-square');
-        if (!clickedSquare || isComputerThinking || game.game_over() || game.turn() !== userColor) return;
+    // Delegate from the stable board root. Chessboard.js rebuilds square elements
+    // when positions change, so direct handlers on squares disappear after a move.
+    $('#board')
+        .off('click.homePractice')
+        .on('click.homePractice', '.square-55d63', function (event) {
+            // Ignore clicks that are part of a drag operation.
+            if (event.originalEvent && event.originalEvent.detail === 0) return;
 
-        if (tapSquare === null) {
-            const piece = game.get(clickedSquare);
-            if (piece && piece.color === userColor) {
+            const clickedSquare = $(this).attr('data-square');
+            if (!clickedSquare || isComputerThinking || game.game_over() || game.turn() !== userColor) return;
+
+            if (tapSquare === null) {
+                const piece = game.get(clickedSquare);
+                if (piece && piece.color === userColor) {
+                    tapSquare = clickedSquare;
+                    highlightLegalMoves(tapSquare);
+                } else {
+                    removeHighlights();
+                }
+                return;
+            }
+
+            if (clickedSquare === tapSquare) {
+                deselectPiece();
+                return;
+            }
+
+            const clickedPiece = game.get(clickedSquare);
+            // Select/switch to another friendly piece on the second click.
+            if (clickedPiece && clickedPiece.color === userColor) {
                 tapSquare = clickedSquare;
                 highlightLegalMoves(tapSquare);
-            } else {
-                removeHighlights();
+                return;
             }
-            return;
-        }
 
-        if (clickedSquare === tapSquare) {
-            deselectPiece();
-            return;
-        }
-
-        const clickedPiece = game.get(clickedSquare);
-        // Clicking another own piece selects it, rather than losing the current selection.
-        if (clickedPiece && clickedPiece.color === userColor) {
-            tapSquare = clickedSquare;
-            highlightLegalMoves(tapSquare);
-            return;
-        }
-
-        const from = tapSquare;
-        if (!commitPlayerMove(from, clickedSquare)) {
-            // Keep the source selected after an illegal destination, so the user can try again.
-            tapSquare = from;
-            highlightLegalMoves(from);
-        }
-    });
+            const from = tapSquare;
+            if (!commitPlayerMove(from, clickedSquare)) {
+                // Illegal destination: retain the selected piece and legal-move hints.
+                tapSquare = from;
+                highlightLegalMoves(from);
+            }
+        });
 }
 
 function initializeBoard() {
