@@ -431,10 +431,21 @@ function handleMove(ws, data) {
 
     // Settle and switch before broadcasting a move. If the clock reaches zero
     // at this boundary, timeout wins and the move is not accepted.
+    // Only accept a move if it advances the position and agrees with the
+    // side-to-move encoded in the submitted FEN. This guards against stale
+    // or malformed move submissions changing whose clock is active.
+    const submittedFen = data.fen.trim();
+    const fields = submittedFen.split(/\s+/);
+    const expectedTurn = mover === 'white' ? 'b' : 'w';
+    const currentFields = String(room.gameState.fen || START_FEN).split(/\s+/);
+    if (fields.length < 4 || !/^[wb]$/.test(fields[1]) || fields[1] !== expectedTurn ||
+        fields[0] === currentFields[0] || submittedFen.length > 200) {
+        return sendError(ws, 'Move position is invalid or out of date. Please resync the board.');
+    }
     if (!switchClockAfterMove(room, mover)) return;
-    room.gameState.fen = data.fen;
+    room.gameState.fen = submittedFen;
     room.gameState.moves.push(data.move);
-    const payload = { type: 'move_made', move: data.move, fen: data.fen, clock: clockSnapshot(room) };
+    const payload = { type: 'move_made', move: data.move, fen: submittedFen, clock: clockSnapshot(room) };
     send(room.white, payload);
     send(room.black, payload);
     room.spectators.forEach(function (spectator) { send(spectator, payload); });
@@ -482,12 +493,15 @@ function handleDrawResponse(ws, data) {
     if (!opponent) return sendError(ws, 'Your opponent has not joined yet.');
     send(opponent, { type: 'draw_response', accepted: Boolean(data.accepted) });
     if (data.accepted) {
-        const payload = { type: 'game_over', result: 'Draw agreed' };
+        room.gameOver = true;
+        stopClock(room);
+        const payload = { type: 'game_over', result: 'Draw agreed', reason: 'draw', clock: clockSnapshot(room) };
         send(room.white, payload);
         send(room.black, payload);
         room.spectators.forEach(function (spectator) { send(spectator, payload); });
-        room.white.roomId = null;
-        room.black.roomId = null;
+        if (room.white) room.white.roomId = null;
+        if (room.black) room.black.roomId = null;
+        room.spectators.forEach(function (spectator) { spectator.roomId = null; spectator.isSpectator = false; });
         gameRooms.delete(ws.roomId);
         broadcastPlayerList();
     }
@@ -511,6 +525,8 @@ function handlePlayerDisconnect(ws) {
     if (roomId) {
         const room = gameRooms.get(roomId);
         if (room) {
+            // Stop the authoritative clock immediately when a player leaves.
+            stopClock(room);
             const payload = { type: 'player_disconnected', color: ws.color };
             if (ws === room.white) {
                 room.white = null;
@@ -521,7 +537,10 @@ function handlePlayerDisconnect(ws) {
             } else {
                 room.spectators = room.spectators.filter(function (spectator) { return spectator !== ws; });
             }
-            if (!room.white && !room.black && room.spectators.length === 0) gameRooms.delete(roomId);
+            if (!room.white && !room.black && room.spectators.length === 0) {
+                stopClock(room);
+                gameRooms.delete(roomId);
+            }
         }
     }
     broadcastPlayerList();
