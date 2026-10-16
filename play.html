@@ -392,6 +392,282 @@
             #incomingChallenge { top: 80px; }
         }
 
+
+        /* Responsive-only fixes: keep existing game logic and visual design intact. */
+        @media (max-width: 991.98px) {
+            html, body {
+                width: 100%;
+                max-width: 100%;
+                overflow-x: clip;
+            }
+
+            .navbar {
+                height: auto;
+                min-height: var(--navbar-height);
+            }
+
+            .navbar > .container {
+                min-height: var(--navbar-height);
+                flex-wrap: wrap;
+            }
+
+            .navbar-collapse {
+                flex-basis: 100%;
+                width: 100%;
+                padding: 6px 0 12px;
+                background: #12141a;
+            }
+
+            .navbar-nav {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.15rem;
+            }
+
+            .navbar-nav .nav-link {
+                padding: 8px 4px;
+            }
+
+            .game-section {
+                padding-top: 1.25rem !important;
+                padding-bottom: 1.5rem !important;
+            }
+
+            .game-section > .container {
+                width: 100%;
+                max-width: 100%;
+                padding-left: clamp(10px, 3vw, 20px);
+                padding-right: clamp(10px, 3vw, 20px);
+            }
+
+            #gameArea > .col-md-8,
+            #gameArea > .col-md-4 {
+                width: 100%;
+                max-width: 100%;
+                flex: 0 0 100%;
+                min-width: 0;
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            #gameArea > .col-md-8 {
+                margin-bottom: 1rem !important;
+            }
+
+            #gameArea > .col-md-4 {
+                margin-bottom: 0 !important;
+            }
+
+            .board-container {
+                width: min(100%, 620px, calc(100vw - 20px));
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            #board {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1;
+            }
+
+            #gameStatus {
+                max-width: 100%;
+                overflow-wrap: anywhere;
+                padding: 9px 12px;
+            }
+
+            .lobby-panel,
+            #gameArea > .col-md-4 > .card,
+            #gameArea > .col-md-4 > .card > .card-body {
+                width: 100%;
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .lobby-player-list {
+                width: 100%;
+                min-width: 0;
+                max-height: 220px;
+            }
+
+            .lobby-player {
+                width: 100%;
+                min-width: 0;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .lobby-player-details {
+                flex: 1 1 0;
+                min-width: 0;
+                grid-template-columns: 8px minmax(0, 1fr);
+            }
+
+            .lobby-player-name {
+                min-width: 0;
+                white-space: normal;
+                overflow-wrap: break-word;
+                word-break: normal;
+                line-height: 1.35;
+            }
+
+            .lobby-player-state {
+                min-width: 0;
+                white-space: normal;
+                overflow-wrap: break-word;
+                line-height: 1.3;
+            }
+
+            .lobby-challenge {
+                flex: 0 0 auto;
+                max-width: 42%;
+                white-space: normal;
+                overflow-wrap: normal;
+                line-height: 1.25;
+                padding: 7px 9px;
+            }
+
+            .game-info,
+            .game-controls,
+            .game-info p,
+            .chat-box,
+            .move-history {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .game-info p {
+                flex-wrap: wrap;
+                gap: 6px;
+                overflow-wrap: anywhere;
+            }
+
+            .mono,
+            #currentRoom,
+            #gameStatusText {
+                overflow-wrap: anywhere;
+                word-break: normal;
+            }
+
+            #chatInput {
+                min-width: 0;
+                width: 1%;
+            }
+
+            #incomingChallenge {
+                width: calc(100vw - 24px);
+                max-width: 390px;
+                max-height: calc(100dvh - 96px);
+                overflow-y: auto;
+                box-sizing: border-box;
+            }
+
+            #roomControls .card,
+            #roomControls .card-body {
+                min-width: 0;
+            }
+
+            #createRoom,
+            #joinRoom,
+            #enterLobby,
+            #acceptChallenge,
+            #declineChallenge,
+            #resignBtn,
+            #offerDrawBtn,
+            #sendChat {
+                min-height: 42px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .game-section > .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            #roomControls h2 {
+                font-size: 1.45rem;
+                line-height: 1.25;
+                margin-bottom: 1rem !important;
+            }
+
+            #roomControls .card-body {
+                padding: 12px;
+            }
+
+            #roomControls .input-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            #playerName {
+                flex: 1 1 100%;
+                width: 100%;
+                min-width: 0;
+                border-radius: 0.375rem !important;
+            }
+
+            #enterLobby {
+                flex: 1 1 100%;
+                width: 100%;
+                border-radius: 0.375rem !important;
+            }
+
+            .lobby-panel {
+                padding: 11px;
+            }
+
+            .lobby-player {
+                gap: 6px;
+                padding: 8px;
+            }
+
+            .lobby-player-name {
+                font-size: 0.86rem;
+            }
+
+            .lobby-player-state {
+                font-size: 0.7rem;
+            }
+
+            .lobby-challenge {
+                max-width: 40%;
+                font-size: 0.78rem;
+                padding: 7px 6px;
+            }
+
+            .chat-box {
+                height: 190px;
+                padding: 8px;
+            }
+
+            .game-info .d-flex {
+                flex-wrap: wrap;
+            }
+
+            #incomingChallenge {
+                padding: 14px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .lobby-player {
+                gap: 5px;
+                padding: 7px;
+            }
+
+            .lobby-challenge {
+                max-width: 38%;
+                font-size: 0.74rem;
+                padding: 6px 5px;
+            }
+
+            #gameArea > .col-md-4 > .card > .card-body {
+                padding: 0.5rem;
+            }
+        }
+
     </style>
 </head>
 <body>
