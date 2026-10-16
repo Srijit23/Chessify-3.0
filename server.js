@@ -94,13 +94,21 @@ function startClock(room) {
     room.clock.running = true;
     room.clock.activeColor = 'white';
     room.clock.lastStartedAt = Date.now();
+    // Tick frequently for accurate timeout detection, but do not send a clock
+    // snapshot every 200ms: the client resets its interpolation anchor on each
+    // snapshot, which can keep a ceil-rounded display stuck at 03:00.
+    let lastClockBroadcastAt = Date.now();
     room.clock.timer = setInterval(() => {
         if (!room.clock || !room.clock.running || room.gameOver) return;
         const c = settleClock(room);
         if (c.whiteMs <= 0) return finishOnTimeout(room, 'white');
         if (c.blackMs <= 0) return finishOnTimeout(room, 'black');
-        broadcastClock(room);
-    }, 200);
+        const now = Date.now();
+        if (now - lastClockBroadcastAt >= 1000) {
+            lastClockBroadcastAt = now;
+            broadcastClock(room);
+        }
+    }, 100);
 }
 function switchClockAfterMove(room, mover) {
     const c = settleClock(room);
