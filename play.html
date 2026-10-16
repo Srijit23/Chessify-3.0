@@ -669,7 +669,11 @@
         }
 
         .time-control-picker { padding: 12px; border: 1px solid rgba(148,163,184,.25); border-radius: 12px; background: rgba(15,23,42,.42); }
-        .chess-clock-bar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; width: min(100%,840px); margin: 0 auto 12px; }
+        .chess-clock-bar { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; width: 100%; margin: 0 0 12px; }
+        .chess-clock-sidebar .chess-clock-player { min-height: 54px; }
+        .chess-clock-sidebar .clock-player-name { flex: 1 1 auto; }
+        .chess-clock-sidebar .chess-clock { flex: 0 0 auto; }
+        @media (min-width: 768px) { .chess-clock-sidebar { position: sticky; top: 12px; } }
         .chess-clock-player { display:flex; align-items:center; gap:9px; min-width:0; padding:10px 13px; border:1px solid #344154; border-radius:12px; background:linear-gradient(145deg,#1b2430,#0b1018); color:#e5edf7; box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
         .clock-color-dot { flex:0 0 9px; width:9px; height:9px; border-radius:50%; }
         .white-dot { background:#e8edf3; box-shadow:0 0 0 2px #536173; }
@@ -763,10 +767,6 @@
 
             <div id="gameArea" class="row" style="display: none;">
                 <div class="col-md-8 mb-4">
-                    <div class="chess-clock-bar" aria-label="Game clocks">
-                        <div class="chess-clock-player" id="whiteClockPlayer"><span class="clock-color-dot white-dot"></span><strong class="chess-clock" id="whiteClock">03:00</strong><span class="clock-player-name" id="whiteClockName">White</span></div>
-                        <div class="chess-clock-player" id="blackClockPlayer"><span class="clock-color-dot black-dot"></span><strong class="chess-clock" id="blackClock">03:00</strong><span class="clock-player-name" id="blackClockName">Black</span></div>
-                    </div>
                     <div class="board-container">
                         <!-- ID 'board' preserved for multiplayer.js compatibility -->
                         <div id="board"></div>
@@ -777,6 +777,10 @@
                 </div>
 
                 <div class="col-md-4">
+                    <div class="chess-clock-bar chess-clock-sidebar mb-3" aria-label="Game clocks">
+                        <div class="chess-clock-player" id="whiteClockPlayer"><span class="clock-color-dot white-dot"></span><span class="clock-player-name" id="whiteClockName">White</span><strong class="chess-clock" id="whiteClock">03:00</strong></div>
+                        <div class="chess-clock-player" id="blackClockPlayer"><span class="clock-color-dot black-dot"></span><span class="clock-player-name" id="blackClockName">Black</span><strong class="chess-clock" id="blackClock">03:00</strong></div>
+                    </div>
                     <div class="lobby-panel mb-3" id="lobbyPanelGame">
                         <h6><i class="fa-solid fa-users me-2"></i>Online players</h6>
                         <div id="lobbyPlayersGame" class="lobby-player-list"><div class="lobby-empty">Waiting for lobby connection…</div></div>
