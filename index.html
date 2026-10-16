@@ -339,7 +339,60 @@ body.home-page footer.bg-dark {
 
 
 
-</style>
+
+    /* Premium metallic practice board + aligned controls */
+    #practice .board-container { max-width:  min(100%, 620px); margin-inline: auto; }
+    #practice #board { width: 100%; max-width: 620px; margin-inline: auto; }
+    #practice #board .piece-417db { cursor: grab; }
+    #practice #board .piece-417db:active { cursor: grabbing; }
+    #practice .card {
+      background: linear-gradient(145deg, rgba(28,34,44,.97), rgba(11,15,23,.98)) !important;
+      color: #e7edf5; border: 1px solid rgba(177,190,208,.28) !important;
+      border-radius: 18px; box-shadow: 0 18px 42px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+      overflow: hidden;
+    }
+    #practice .card-body { padding: 1.35rem; }
+    #practice .card-title { color: #dbe7f5; font-weight: 700; letter-spacing: .02em; margin-bottom: 1.2rem; }
+    #practice .game-controls { display: flex; flex-direction: column; gap: 1rem; }
+    #practice .game-controls .mb-3 { margin-bottom: 0 !important; }
+    #practice .game-controls .form-label { color: #aebdd0; font-size: .92rem; font-weight: 600; margin-bottom: .5rem; }
+    #practice .game-controls .form-check { margin: .35rem 0; }
+    #practice .game-controls .form-select {
+      color: #e5edf7; background-color: #171e29; border: 1px solid #465364;
+      border-radius: 10px; min-height: 44px; box-shadow: inset 0 1px 2px rgba(0,0,0,.3);
+    }
+    #practice .game-controls .form-select:focus { border-color: #8aa3bd; box-shadow: 0 0 0 .2rem rgba(138,163,189,.18); }
+    #practice .game-controls .btn {
+      min-height: 43px; padding: .65rem .9rem; border-radius: 10px; font-weight: 700;
+      letter-spacing: .01em; border: 1px solid rgba(220,230,242,.2);
+      box-shadow: 0 4px 12px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.09);
+      transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+    }
+    #practice .game-controls .btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    #practice .game-controls .btn:active { transform: translateY(0); }
+    #practice .game-controls .btn-primary, #practice .game-controls .btn-success {
+      background: linear-gradient(135deg, #667f98, #3d5369); border-color: #8298ad; color: #fff;
+    }
+    #practice .game-controls .btn-secondary, #practice .game-controls .btn-outline-secondary {
+      background: linear-gradient(135deg, #3a424e, #252c36); border-color: #626f7f; color: #e6edf5;
+    }
+    #practice .game-controls .btn-danger {
+      background: linear-gradient(135deg, #873f49, #592a32); border-color: #b26770; color: #fff;
+    }
+    #practice #moveHistory { border: 1px solid #354253; border-radius: 12px; background: rgba(5,8,13,.45); padding: .65rem; }
+    @media (min-width: 768px) {
+      #practice .game-controls .control-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+      #practice .game-controls .control-actions .btn { width: 100%; margin: 0 !important; }
+      #practice .game-controls .control-actions .btn:last-child { grid-column: 1 / -1; }
+    }
+    @media (max-width: 767.98px) {
+      #practice .card-body { padding: 1rem; }
+      #practice .game-controls .control-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+      #practice .game-controls .control-actions .btn { width: 100%; margin: 0 !important; }
+      #practice .game-controls .control-actions .btn:last-child { grid-column: 1 / -1; }
+    }
+
+  </style>
 
 </head>
 <body class="home-page">
@@ -428,7 +481,7 @@ body.home-page footer.bg-dark {
                   </select>
                 </div>
 
-                <div class="mb-3">
+                <div class="control-actions" class="mb-3">
                   <button id="startBtn" class="btn btn-primary">New Game</button>
                   <button id="undoBtn" class="btn btn-secondary">Undo Move</button>
                   <button id="resignBtn" class="btn btn-danger">Resign</button>
