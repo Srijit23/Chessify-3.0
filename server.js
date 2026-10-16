@@ -63,7 +63,7 @@ function clockSnapshot(room) {
     };
 }
 function broadcastClock(room) {
-    const payload = { type: 'clock_update', clock: clockSnapshot(room) };
+    const payload = { type: 'clock_update' };
     [room.white, room.black].concat(room.spectators || []).forEach(ws => send(ws, payload));
 }
 function stopClock(room) {
@@ -201,10 +201,8 @@ function startChallengeMatch(challenge) {
         black: challenge.toWs,
         spectators: [],
         gameState: { fen: START_FEN, moves: [] },
-        clock: createClock(challenge.initialSeconds, challenge.incrementSeconds)
     };
     gameRooms.set(roomId, room);
-    startClock(room);
 
     challenge.fromWs.roomId = roomId;
     challenge.fromWs.color = 'white';
@@ -310,7 +308,6 @@ function handleCreateRoom(ws, data) {
         black: null,
         spectators: [],
         gameState: { fen: START_FEN, moves: [] },
-        clock: createClock(DEFAULT_TIME_SECONDS, 0)
     });
     ws.roomId = roomId;
     ws.color = 'white';
@@ -332,7 +329,6 @@ function handleJoinRoom(ws, data) {
         ws.roomId = roomId;
         ws.color = 'black';
         ws.isSpectator = false;
-        startClock(room);
         send(room.white, { type: 'game_start', roomId: roomId, color: 'white', fen: room.gameState.fen, opponent: room.black.playerName, clock: clockSnapshot(room) });
         send(ws, { type: 'game_start', roomId: roomId, color: 'black', fen: room.gameState.fen, opponent: room.white.playerName, clock: clockSnapshot(room) });
     } else {
@@ -421,16 +417,6 @@ function handleMove(ws, data) {
     if (typeof data.fen !== 'string' || !data.move || typeof data.move !== 'object') return sendError(ws, 'Invalid move payload.');
 
     const mover = ws === room.white ? 'white' : 'black';
-    const clock = settleClock(room);
-    if (!clock || !clock.running) return sendError(ws, 'The game clock is not running.');
-    if (clock.activeColor !== mover) return sendError(ws, 'It is not your turn.');
-    if ((mover === 'white' ? clock.whiteMs : clock.blackMs) <= 0) {
-        finishOnTimeout(room, mover);
-        return;
-    }
-
-    // Settle and switch before broadcasting a move. If the clock reaches zero
-    // at this boundary, timeout wins and the move is not accepted.
     // Only accept a move if it advances the position and agrees with the
     // side-to-move encoded in the submitted FEN. This guards against stale
     // or malformed move submissions changing whose clock is active.
@@ -442,7 +428,6 @@ function handleMove(ws, data) {
         fields[0] === currentFields[0] || submittedFen.length > 200) {
         return sendError(ws, 'Move position is invalid or out of date. Please resync the board.');
     }
-    if (!switchClockAfterMove(room, mover)) return;
     room.gameState.fen = submittedFen;
     room.gameState.moves.push(data.move);
     const payload = { type: 'move_made', move: data.move, fen: submittedFen, clock: clockSnapshot(room) };
@@ -494,7 +479,6 @@ function handleDrawResponse(ws, data) {
     send(opponent, { type: 'draw_response', accepted: Boolean(data.accepted) });
     if (data.accepted) {
         room.gameOver = true;
-        stopClock(room);
         const payload = { type: 'game_over', result: 'Draw agreed', reason: 'draw', clock: clockSnapshot(room) };
         send(room.white, payload);
         send(room.black, payload);
@@ -538,7 +522,6 @@ function handlePlayerDisconnect(ws) {
                 room.spectators = room.spectators.filter(function (spectator) { return spectator !== ws; });
             }
             if (!room.white && !room.black && room.spectators.length === 0) {
-                stopClock(room);
                 gameRooms.delete(roomId);
             }
         }
